@@ -1,0 +1,9 @@
+.vscode
+.DS_Store
+build
+
+main
+*.o
+
+tests/*
+!tests/*.cpp
