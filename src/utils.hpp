@@ -5,8 +5,9 @@
 struct Detection {
     int id;
     std::string category;
-    cv::Rect2f bbox;
+    cv::Rect bbox;
     float confidence;
+    std::vector<cv::Rect> trajectory{};
 };
 
 struct Frame {

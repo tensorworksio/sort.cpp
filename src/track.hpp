@@ -3,36 +3,24 @@
 #include <opencv2/opencv.hpp>
 
 class Track {
-private:
-    void init_kf(cv::Rect2f bbox);
-    cv::KalmanFilter kf;
-    cv::Mat measurement;
-    std::vector<cv::Rect2f> m_history;
-
 public:
     static int kf_count;
-    int m_time_since_update;
-    int m_hits;
-    int m_hit_streak;
-    int m_age;
-    int m_id;
+    std::vector<cv::Rect> m_history{};
+    size_t m_time_since_update = 0;
+    size_t m_age = 0;
+    int m_id = -1;
 
-    Track(cv::Rect2f bbox) {
-        init_kf(bbox);
-        m_time_since_update = 0;
-        m_hits = 0;
-        m_hit_streak = 0;
-        m_age = 0;
-        m_id = kf_count;
-        kf_count++;
-    }
 
-    ~Track() {
-        m_history.clear();
-    }
+    Track(cv::Rect bbox, float process_noise_scale = 1.f, float measurement_noise_scale = 1.f);
+    ~Track();
 
-    cv::Rect2f predict();
-    void update(cv::Rect2f bbox);
-    cv::Rect2f get_state();
-    cv::Rect2f get_rect_xysr(float cx, float cy, float s, float r);
+    cv::Rect predict();
+    void update(cv::Rect bbox);
+    cv::Rect get_state();
+    cv::Rect get_bbox(float cx, float cy, float s, float r);
+
+private:
+    cv::KalmanFilter kf{};
+    cv::Mat measurement{};
+    void init_kf(cv::Rect bbox, float process_noise_scale, float measurement_noise_scale);
 };

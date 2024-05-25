@@ -1,104 +1,100 @@
-#include <sort.hpp>
+#include "sort.hpp"
+#include "metrics.hpp"
 #include <dlib/optimization/max_cost_assignment.h>
 
 
-float iou(cv::Rect2f bb_test, cv::Rect2f bb_gt) {
-    float in = (bb_test & bb_gt).area();
-    float un = bb_test.area() + bb_gt.area() - in;
-    return in / un;
-}
+SortTracker::SortTracker(size_t max_age, float iou_threshold, float process_noise_scale, float measurement_noise_scale)
+    : max_age(max_age), 
+      iou_threshold(static_cast<int>(iou_threshold * PRECISION)), 
+      process_noise_scale(process_noise_scale), 
+      measurement_noise_scale(measurement_noise_scale) {}
 
 
 void SortTracker::assign(std::vector<Detection>& detections, 
-                         std::vector<std::pair<int, int>>& matches, 
-                         std::vector<int>& unmatched_detections, 
-                         std::vector<int>& unmatched_tracks)
-{
-    if (tracks.empty()) {
-        for (size_t i = 0; i < detections.size(); i++) {
-            unmatched_detections.push_back(static_cast<int>(i));
-        }
-        return;
+                         std::set<std::pair<size_t, size_t>>& matches, 
+                         std::set<size_t>& unmatched_detections, 
+                         std::set<size_t>& unmatched_tracks)
+{   
+    // By default detections are unmatched 
+    for (size_t i = 0; i < detections.size(); i++) {
+        unmatched_detections.insert(i);
     }
 
-    if (detections.empty()) {
-        for (size_t i = 0; i < tracks.size(); i++) {
-            unmatched_tracks.push_back(static_cast<int>(i));
-        }
+    // By default tracks are unmatched
+    for (size_t i = 0; i < tracks.size(); i++) {
+        unmatched_tracks.insert(i);
+    }
+
+    if (tracks.empty() || detections.empty()) {
         return;
     }
 
     // Create a cost matrix
-    dlib::matrix<float> cost_matrix(detections.size(), tracks.size());
+    size_t size = std::max(detections.size(), tracks.size());
+    dlib::matrix<int> cost_matrix = dlib::zeros_matrix<int>(size, size);
     for (size_t i = 0; i < detections.size(); i++) {
         for (size_t j = 0; j < tracks.size(); j++) {
-            cost_matrix(i, j) = 1.f - iou(detections[i].bbox, tracks[j].get_state());
+            cost_matrix(i, j) = static_cast<int>(PRECISION * iou(detections[i].bbox, tracks[j].get_state()));
         }
     }
 
     // Solve the linear assignment problem
     std::vector<long> assignment = dlib::max_cost_assignment(cost_matrix);
 
-    // Keep matches with IoU > threshold
-    for (size_t i = 0; i < detections.size(); ++i) {
+    // Find matches
+    for (size_t i = 0; i < detections.size(); i++) {
         if (cost_matrix(i, assignment[i]) < iou_threshold) {
-            unmatched_detections.push_back(static_cast<int>(i));
-            unmatched_tracks.push_back(static_cast<int>(assignment[i]));
-        } else {
-            matches.emplace_back(static_cast<int>(i), static_cast<int>(assignment[i]));
+            continue;
         }
-    }
-
-    // If there are more tracks than detections
-    for (size_t j = 0; j < tracks.size(); ++j) {
-        if (std::find(assignment.begin(), assignment.end(), j) == assignment.end()) {
-            unmatched_tracks.push_back(static_cast<int>(j));
-        }
+        unmatched_detections.erase(i);
+        unmatched_tracks.erase(assignment[i]);
+        matches.emplace(i, assignment[i]);
     }
 }
 
 void SortTracker::process(Frame& frame) {
     std::vector<Detection>& detections = frame.detected_objects;
 
-    std::vector<std::pair<int, int>> matches;
-    std::vector<int> unmatched_detections;
-    std::vector<int> unmatched_tracks;
+    std::set<std::pair<size_t, size_t>> matches;
+    std::set<size_t> unmatched_detections;
+    std::set<size_t> unmatched_tracks;
 
     // Propagate tracks
     for (auto track = tracks.begin(); track != tracks.end(); ) {
-        track->predict();
-        auto state = track->get_state();
-        if (state.x < 0 || state.y < 0 || state.x + state.width > frame.image.cols || state.y + state.height > frame.image.rows) {
-            track = tracks.erase(track);
-        } else {
-            ++track;
-        }
+        cv::Rect predicted_bbox = track->predict();
+
+        // Clamp the predicted bounding box to the image size
+        predicted_bbox.x = std::max(predicted_bbox.x, 0);
+        predicted_bbox.y = std::max(predicted_bbox.y, 0);
+        predicted_bbox.width = std::min(predicted_bbox.width, frame.image.cols - predicted_bbox.x - 1);
+        predicted_bbox.height = std::min(predicted_bbox.height, frame.image.rows - predicted_bbox.y - 1);
+
+        track->m_history.push_back(predicted_bbox);
+        track++;
     }
 
+    // Assign detections to tracks
     assign(detections, matches, unmatched_detections, unmatched_tracks);
 
     // Update tracks
-    for (size_t i = 0; i < matches.size(); i++) {
-        int detection_idx = matches[i].first;
-        int track_idx = matches[i].second;
-        tracks[track_idx].update(detections[detection_idx].bbox);
+    for (const auto& [det_idx, track_idx] : matches) {
+        tracks[track_idx].update(detections[det_idx].bbox);
 
-        // Update detection id with verified tracks
-        if ((tracks[track_idx].m_hit_streak >= min_hits) || frame.idx <= min_hits)  {
-            detections[detection_idx].id = tracks[track_idx].m_id;
-        }
+        // Update detection info with verified tracks
+        detections[det_idx].id = tracks[track_idx].m_id;
+        detections[det_idx].trajectory = tracks[track_idx].m_history;
     }
 
     // Create new tracks
-    for (size_t i = 0; i < unmatched_detections.size(); i++) {
-        Track new_track(detections[unmatched_detections[i]].bbox);
+    for (const auto& det_idx : unmatched_detections) {
+        Track new_track(detections[det_idx].bbox, process_noise_scale, measurement_noise_scale);
         tracks.push_back(new_track);
     }
 
     // Remove lost tracks
-    for (size_t i = 0; i < unmatched_tracks.size(); i++) {
-        if (tracks[unmatched_tracks[i]].m_time_since_update > max_age) {
-            tracks.erase(tracks.begin() + unmatched_tracks[i]);
+    for (const auto& track_idx : unmatched_tracks) {
+        if (tracks[track_idx].m_time_since_update > max_age) {
+            tracks.erase(tracks.begin() + track_idx);
         }
     }
 }

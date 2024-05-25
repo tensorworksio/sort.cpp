@@ -1,23 +1,22 @@
 #pragma once
 
-#include <track.hpp>
-#include <utils.hpp>
+#include "track.hpp"
+#include "utils.hpp"
 
 class SortTracker {
-private:
-    std::vector<Track> tracks{};
-    const int max_age;
-    const int min_hits;
-    const float iou_threshold;
-
 public:
-    SortTracker(int max_age = 1, int min_hits = 3, float iou_threshold = 0.3)
-        : max_age(max_age), min_hits(min_hits), iou_threshold(iou_threshold) {}
-
+    SortTracker(size_t max_age = 3, float iou_threshold = 0.3, float process_noise_scale = 1.f, float measurement_noise_scale = 1.f);
     void process(Frame& frame);
     void assign(std::vector<Detection>& detections, 
-                std::vector<std::pair<int, int>>& matches, 
-                std::vector<int>& unmatched_detections, 
-                std::vector<int>& unmatched_tracks);
+                std::set<std::pair<size_t, size_t>>& matches, 
+                std::set<size_t>& unmatched_detections, 
+                std::set<size_t>& unmatched_tracks);
 
+private:
+    std::vector<Track> tracks{};
+    const size_t max_age;
+    const int iou_threshold;
+    const float process_noise_scale;
+    const float measurement_noise_scale;
+    static constexpr float PRECISION = 1E6f;
 };

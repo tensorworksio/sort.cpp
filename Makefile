@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = $(shell pkg-config --cflags dlib-1) -I/usr/local/include/opencv4 -Isrc -Wall -Wextra -g
-LDFLAGS = $(shell pkg-config --libs dlib-1) -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs
-SRC = $(wildcard src/*.cpp)
+LDFLAGS = $(shell pkg-config --libs dlib-1) -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_imgcodecs -lopencv_video
+SRC = $(wildcard src/*.cpp) main.cpp
 OBJ = $(SRC:.cpp=.o)
 
 .PHONY: all clean main
