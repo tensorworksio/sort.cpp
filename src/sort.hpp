@@ -12,8 +12,8 @@ public:
                 std::set<size_t>& unmatched_detections, 
                 std::set<size_t>& unmatched_tracks);
 
-private:
     std::vector<Track> tracks{};
+private:
     const size_t max_age;
     const int iou_threshold;
     const float process_noise_scale;

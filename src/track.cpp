@@ -2,7 +2,7 @@
 
 int Track::kf_count = 0;
 
-void Track::init_kf(cv::Rect bbox, float process_noise_scale, float measurement_noise_scale) 
+void Track::init_kf(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale) 
 {
     int stateNum = 7; // [cx,cy,s,r,d(cx),d(cy),d(s)]
     int measureNum = 4; // [x,y,s,r]
@@ -47,12 +47,15 @@ void Track::init_kf(cv::Rect bbox, float process_noise_scale, float measurement_
 
     // initialize state vector with bounding box in [cx,cy,s,r] style
     kf.statePost = cv::Mat_<float>::zeros(stateNum, 1);
-    update(bbox);  
+    kf.statePost.at<float>(0, 0) = bbox.x + bbox.width / 2;
+    kf.statePost.at<float>(1, 0) = bbox.y + bbox.height / 2;
+    kf.statePost.at<float>(2, 0) = bbox.area();
+    kf.statePost.at<float>(3, 0) = bbox.width / bbox.height;
 }
 
-Track::Track(cv::Rect bbox, float process_noise_scale, float measurement_noise_scale)
+Track::Track(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale)
 {
-    m_id = kf_count++;
+    m_id = ++kf_count;
     init_kf(bbox, process_noise_scale, measurement_noise_scale);
 }
 
@@ -61,7 +64,7 @@ Track::~Track()
     m_history.clear();
 }
 
-cv::Rect Track::predict()
+cv::Rect2f Track::predict()
 {
     cv::Mat prediction = kf.predict();
     m_age++;
@@ -70,7 +73,7 @@ cv::Rect Track::predict()
 
 }
 
-void Track::update(cv::Rect bbox)
+void Track::update(cv::Rect2f bbox)
 {
     m_time_since_update = 0;
     m_history.clear();
@@ -85,18 +88,18 @@ void Track::update(cv::Rect bbox)
     kf.correct(measurement);
 }
 
-cv::Rect Track::get_state()
+cv::Rect2f Track::get_state()
 {
     cv::Mat state = kf.statePost;
     return get_bbox(state.at<float>(0, 0), state.at<float>(1, 0), state.at<float>(2, 0), state.at<float>(3, 0));
 }
 
-cv::Rect Track::get_bbox(float cx, float cy, float s, float r)
+cv::Rect2f Track::get_bbox(float cx, float cy, float s, float r)
 {
     float w = sqrt(s * r);
     float h = s / w;
     float x = (cx - w / 2);
     float y = (cy - h / 2);
 
-    return cv::Rect(x, y, w, h);
+    return cv::Rect2f(x, y, w, h);
 }

@@ -61,11 +61,11 @@ void SortTracker::process(Frame& frame) {
 
     // Propagate tracks
     for (auto track = tracks.begin(); track != tracks.end(); ) {
-        cv::Rect predicted_bbox = track->predict();
+        cv::Rect2f predicted_bbox = track->predict();
 
         // Clamp the predicted bounding box to the image size
-        predicted_bbox.x = std::max(predicted_bbox.x, 0);
-        predicted_bbox.y = std::max(predicted_bbox.y, 0);
+        predicted_bbox.x = std::max(predicted_bbox.x, 0.f);
+        predicted_bbox.y = std::max(predicted_bbox.y, 0.f);
         predicted_bbox.width = std::min(predicted_bbox.width, frame.image.cols - predicted_bbox.x - 1);
         predicted_bbox.height = std::min(predicted_bbox.height, frame.image.rows - predicted_bbox.y - 1);
 
