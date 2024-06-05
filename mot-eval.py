@@ -1,6 +1,7 @@
 # https://github.com/cheind/py-motmetrics
 
 from argparse import ArgumentParser
+from pathlib import Path
 
 import motmetrics as mm
 import numpy as np
@@ -17,9 +18,14 @@ def parse_argumesnts():
     parser.add_argument(
         "--out",
         dest="out",
-        required=True,
+        required=False,
+        default=None,
         help="Path to tracking output file",
     )
+
+    if args.out is None:
+        args.out = str(Path(args.gt).parent.parent / "out.txt")
+
     return parser.parse_args()
 
 
@@ -50,7 +56,9 @@ def motMetricsEnhancedCalculator(gtSource, outSource):
         # Call update once for per frame.
         # format: gt object ids, t object ids, distance
         acc.update(
-            gt_dets[:, 0].astype("int").tolist(), out_dets[:, 0].astype("int").tolist(), C
+            gt_dets[:, 0].astype("int").tolist(),
+            out_dets[:, 0].astype("int").tolist(),
+            C,
         )
 
     mh = mm.metrics.create()

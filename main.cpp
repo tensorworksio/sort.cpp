@@ -41,7 +41,6 @@ int main(int argc, char** argv) {
     std::sort(imageFiles.begin(), imageFiles.end());
 
     for (const auto& path : imageFiles) {
-        std::cout << path << std::endl;
         frame.idx++;
         frame.image = cv::imread(path);
         frame.detected_objects.clear();
@@ -84,8 +83,8 @@ int main(int argc, char** argv) {
         }
 
         cv::imshow("Frame", frame.image);
-        if (cv::waitKey(0) == 27) {
-            continue;
+        if (cv::waitKey(1) == 27) {
+            break;
         }
     }
 
