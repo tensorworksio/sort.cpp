@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     std::filesystem::path imgPath = path + "/img1";
     std::vector<std::filesystem::path> imageFiles;
 
-    std::ifstream infile(detPath);
+    std::ifstream infile(gtPath);
     std::ofstream outfile(outPath);
 
     std::istringstream iss;
@@ -81,13 +81,6 @@ int main(int argc, char** argv) {
             auto color = detection.getColor();
             cv::rectangle(frame.image, detection.bbox, color, 2);
             cv::putText(frame.image, std::to_string(detection.id), cv::Point(detection.bbox.x, detection.bbox.y), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
-
-            // Draw the trajectory
-            std::cout << "Trajectory size " << detection.trajectory.size() << std::endl;
-            for (const auto& rect : detection.trajectory) {
-                cv::Point center(rect.x + rect.width / 2, rect.y + rect.height / 2);
-                cv::circle(frame.image, center, 2, color, -1);
-            }
         }
 
         cv::imshow("Frame", frame.image);
@@ -100,9 +93,3 @@ int main(int argc, char** argv) {
     outfile.close();
     return 0;
 }
-
-// input: Path to sequence
-// read sequence: update Frame
-// when frame is ready (next id != id), call tracker.process(frame)
-// output: write detection of frame to file
-// display: draw detection on frame.image

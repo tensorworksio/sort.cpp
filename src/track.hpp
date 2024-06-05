@@ -5,7 +5,6 @@
 class Track {
 public:
     static int kf_count;
-    std::vector<cv::Rect2f> m_history{};
     size_t m_time_since_update = 0;
     size_t m_age = 0;
     int m_id = -1;
@@ -22,5 +21,6 @@ public:
 private:
     cv::KalmanFilter kf{};
     cv::Mat measurement{};
+    std::vector<cv::Rect2f> m_history{};
     void init_kf(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale);
 };

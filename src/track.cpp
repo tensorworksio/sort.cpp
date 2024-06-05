@@ -69,8 +69,9 @@ cv::Rect2f Track::predict()
     cv::Mat prediction = kf.predict();
     m_age++;
     m_time_since_update++;
-    return get_bbox(prediction.at<float>(0, 0), prediction.at<float>(1, 0), prediction.at<float>(2, 0), prediction.at<float>(3, 0));
-
+    auto bbox = get_bbox(prediction.at<float>(0, 0), prediction.at<float>(1, 0), prediction.at<float>(2, 0), prediction.at<float>(3, 0));
+    m_history.push_back(bbox);
+    return bbox;
 }
 
 void Track::update(cv::Rect2f bbox)

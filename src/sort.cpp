@@ -68,8 +68,6 @@ void SortTracker::process(Frame& frame) {
         predicted_bbox.y = std::max(predicted_bbox.y, 0.f);
         predicted_bbox.width = std::min(predicted_bbox.width, frame.image.cols - predicted_bbox.x - 1);
         predicted_bbox.height = std::min(predicted_bbox.height, frame.image.rows - predicted_bbox.y - 1);
-
-        track->m_history.push_back(predicted_bbox);
         track++;
     }
 
@@ -82,7 +80,6 @@ void SortTracker::process(Frame& frame) {
 
         // Update detection info with verified tracks
         detections[det_idx].id = tracks[track_idx].m_id;
-        detections[det_idx].trajectory = tracks[track_idx].m_history;
     }
 
     // Create new tracks
