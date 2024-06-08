@@ -2,17 +2,17 @@
 
 int Track::kf_count = 0;
 
-void Track::init_kf(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale) 
+void Track::init_kf(cv::Rect2f bbox, float dt, float process_noise_scale, float measurement_noise_scale) 
 {
-    int stateNum = 7; // [cx,cy,s,r,d(cx),d(cy),d(s)]
-    int measureNum = 4; // [x,y,s,r]
+    size_t stateNum = 7; // [cx,cy,s,r,d(cx),d(cy),d(s)]
+    size_t measureNum = 4; // [x,y,s,r]
     kf = cv::KalmanFilter(stateNum, measureNum, 0);
     measurement = cv::Mat::zeros(measureNum, 1, CV_32F);
 
     kf.transitionMatrix = (cv::Mat_<float>(stateNum, stateNum) <<
-		1, 0, 0, 0, 1, 0, 0,
-		0, 1, 0, 0, 0, 1, 0,
-		0, 0, 1, 0, 0, 0, 1,
+		1, 0, 0, 0, dt, 0, 0,
+		0, 1, 0, 0, 0, dt, 0,
+		0, 0, 1, 0, 0, 0, dt,
 		0, 0, 0, 1, 0, 0, 0,
 		0, 0, 0, 0, 1, 0, 0,
 		0, 0, 0, 0, 0, 1, 0,
@@ -53,10 +53,10 @@ void Track::init_kf(cv::Rect2f bbox, float process_noise_scale, float measuremen
     kf.statePost.at<float>(3, 0) = bbox.width / bbox.height;
 }
 
-Track::Track(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale)
+Track::Track(cv::Rect2f bbox, float dt, float process_noise_scale, float measurement_noise_scale)
 {
     m_id = ++kf_count;
-    init_kf(bbox, process_noise_scale, measurement_noise_scale);
+    init_kf(bbox, dt, process_noise_scale, measurement_noise_scale);
 }
 
 Track::~Track()
@@ -103,4 +103,46 @@ cv::Rect2f Track::get_bbox(float cx, float cy, float s, float r)
     float y = (cy - h / 2);
 
     return cv::Rect2f(x, y, w, h);
+}
+
+void KFTrackerConstantAcceleration::init_kf(cv::Rect2f bbox, float dt, float process_noise_scale, float measurement_noise_scale) {
+    
+    size_t measureNum = 4; // [x,y,w,h]
+    size_t stateNum = measureNum * 3; // [x,y,w,h,dx,dy,dw,dh,ddx,ddy,ddw,ddh]
+    auto dynamicsMatrix = (cv::Mat_<float>(3, 3) <<
+        1, dt, dt * dt * 0.5,
+        0, 1, dt,
+        0, 0, 1);
+
+    auto covMatrix = (cv::Mat_<float>(3, 3) <<
+        powf(dt, 6) / 36.f, powf(dt, 5) / 24.f, powf(dt, 4) / 6.f,
+        powf(dt, 5) / 24.f, powf(dt, 4) / 4.f, powf(dt, 3) / 2.f,
+        powf(dt, 4) / 6.f, powf(dt, 3) / 2.f, powf(dt, 2));
+
+    kf.transitionMatrix = cv::Mat::zeros(stateNum, stateNum, CV_32F);
+    kf.processNoiseCov = cv::Mat::zeros(stateNum, stateNum, CV_32F);
+
+    for (size_t i = 0; i < stateNum; i += 3) {
+        kf.transitionMatrix.rowRange(i, i + 3).colRange(i, i + 3) = dynamicsMatrix;
+        kf.processNoiseCov.rowRange(i, i + 3).colRange(i, i + 3) = covMatrix * process_noise_scale;
+    }
+
+    kf.measurementMatrix = cv::Mat::zeros(measureNum, stateNum, CV_32F);
+    for (size_t i = 0; i < measureNum; ++i) {
+        kf.measurementMatrix.at<float>(i, i * 3) = 1.f;
+    }
+
+    kf.measurementNoiseCov = cv::Mat::eye(measureNum, measureNum, CV_32F);
+    for (size_t i = 0; i < measureNum; ++i) {
+        kf.measurementNoiseCov.at<float>(i, i) = measurement_noise_scale;
+    }
+
+    kf.errorCovPre = cv::Mat_<float>::ones(stateNum, stateNum);
+
+    // initialize state vector with bounding box in // [x, y, w, h] style
+    kf.statePost = cv::Mat_<float>::zeros(stateNum, 1);
+    kf.statePost.at<float>(0, 0) = bbox.x;
+    kf.statePost.at<float>(3, 0) = bbox.y;
+    kf.statePost.at<float>(6, 0) = bbox.width;
+    kf.statePost.at<float>(9, 0) = bbox.height;
 }

@@ -10,7 +10,6 @@ struct Detection {
     cv::Rect2f bbox;
     float confidence;
     cv::Point3f position;
-    std::vector<cv::Rect2f> trajectory;
 
     cv::Scalar getColor() const {
         srand(id);
