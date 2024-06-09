@@ -3,11 +3,18 @@
 #include <dlib/optimization/max_cost_assignment.h>
 
 
-SortTracker::SortTracker(size_t max_age, float iou_threshold, float process_noise_scale, float measurement_noise_scale)
-    : max_age(max_age), 
+SortTracker::SortTracker(KFTrackerType type,
+                         size_t max_age, 
+                         float iou_threshold, 
+                         float process_noise_scale, 
+                         float measurement_noise_scale, 
+                         size_t time_step)
+    : tracker_type(type),
+      max_age(max_age), 
       iou_threshold(static_cast<int>(iou_threshold * PRECISION)), 
       process_noise_scale(process_noise_scale), 
-      measurement_noise_scale(measurement_noise_scale) {}
+      measurement_noise_scale(measurement_noise_scale),
+      time_step(time_step) {}
 
 
 void SortTracker::assign(std::vector<Detection>& detections, 
@@ -34,7 +41,7 @@ void SortTracker::assign(std::vector<Detection>& detections,
     dlib::matrix<int> cost_matrix = dlib::zeros_matrix<int>(size, size);
     for (size_t i = 0; i < detections.size(); i++) {
         for (size_t j = 0; j < tracks.size(); j++) {
-            cost_matrix(i, j) = static_cast<int>(PRECISION * iou(detections[i].bbox, tracks[j].get_state()));
+            cost_matrix(i, j) = static_cast<int>(PRECISION * iou(detections[i].bbox, tracks[j]->get_state()));
         }
     }
 
@@ -60,7 +67,7 @@ void SortTracker::process(Frame& frame) {
     std::set<size_t> unmatched_tracks;
 
     // Propagate tracks
-    for (auto track = tracks.begin(); track != tracks.end(); ) {
+    for (auto& track : tracks) {
         cv::Rect2f predicted_bbox = track->predict();
 
         // Clamp the predicted bounding box to the image size
@@ -68,7 +75,6 @@ void SortTracker::process(Frame& frame) {
         predicted_bbox.y = std::max(predicted_bbox.y, 0.f);
         predicted_bbox.width = std::min(predicted_bbox.width, frame.image.cols - predicted_bbox.x - 1);
         predicted_bbox.height = std::min(predicted_bbox.height, frame.image.rows - predicted_bbox.y - 1);
-        track++;
     }
 
     // Assign detections to tracks
@@ -76,22 +82,19 @@ void SortTracker::process(Frame& frame) {
 
     // Update tracks
     for (const auto& [det_idx, track_idx] : matches) {
-        tracks[track_idx].update(detections[det_idx].bbox);
+        tracks.at(track_idx)->update(detections[det_idx].bbox);
 
         // Update detection info with verified tracks
-        detections[det_idx].id = tracks[track_idx].m_id;
+        detections[det_idx].id = tracks[track_idx]->m_id;
     }
 
     // Create new tracks
     for (const auto& det_idx : unmatched_detections) {
-        Track new_track(detections[det_idx].bbox, process_noise_scale, measurement_noise_scale);
-        tracks.push_back(new_track);
+        auto new_track = KFTrackerFactory::create(tracker_type, detections[det_idx].bbox, process_noise_scale, measurement_noise_scale, time_step);
+        tracks.push_back(std::move(new_track));
     }
 
     // Remove lost tracks
-    for (const auto& track_idx : unmatched_tracks) {
-        if (tracks[track_idx].m_time_since_update > max_age) {
-            tracks.erase(tracks.begin() + track_idx);
-        }
-    }
+    tracks.erase(std::remove_if(tracks.begin(), tracks.end(), 
+        [this](const auto& track) { return track->m_time_since_update > max_age; }), tracks.end());
 }

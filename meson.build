@@ -1,6 +1,7 @@
 project('sort.cpp', 'cpp')
 
 dlib_dep = dependency('dlib-1', method : 'pkg-config')
+boost_depp = dependency('boost', modules : ['filesystem', 'program_options'])
 opencv_dep = dependency('opencv', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video'])
 
 cxx_flags = ['-I/usr/local/include/opencv4', '-Isrc', '-Wall', '-Wextra', '-g']
@@ -13,7 +14,7 @@ main_file = meson.current_source_dir() / 'main.cpp'
 src_files += main_file
 
 executable('main', src_files,
-  dependencies : [dlib_dep, opencv_dep],
+  dependencies : [dlib_dep, boost_depp, opencv_dep],
   include_directories : inc_dir,
   cpp_args : cxx_flags,
   install : true

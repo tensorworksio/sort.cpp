@@ -1,13 +1,15 @@
-#include "track.hpp"
+#include "tracker.hpp"
 
-int Track::kf_count = 0;
+size_t KFTracker::kf_count = 0;
 
-void Track::init_kf(cv::Rect2f bbox, float dt, float process_noise_scale, float measurement_noise_scale) 
+void KFTrackerConstantVelocity::init_kf(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale, size_t time_step) 
 {
-    size_t stateNum = 7; // [cx,cy,s,r,d(cx),d(cy),d(s)]
+    size_t stateNum = 7; // [cx,cy,s,r,dcx,dcy,ds]
     size_t measureNum = 4; // [x,y,s,r]
     kf = cv::KalmanFilter(stateNum, measureNum, 0);
     measurement = cv::Mat::zeros(measureNum, 1, CV_32F);
+
+    float dt = static_cast<float>(time_step);
 
     kf.transitionMatrix = (cv::Mat_<float>(stateNum, stateNum) <<
 		1, 0, 0, 0, dt, 0, 0,
@@ -36,7 +38,7 @@ void Track::init_kf(cv::Rect2f bbox, float dt, float process_noise_scale, float 
     kf.processNoiseCov *= process_noise_scale;
     kf.processNoiseCov.at<float>(stateNum - 1, stateNum - 1) *= 0.01f;
     kf.processNoiseCov.rowRange(4, stateNum).colRange(4, stateNum) *= 0.01f;
-    
+
     kf.measurementNoiseCov = cv::Mat_<float>::eye(measureNum, measureNum);
     kf.measurementNoiseCov *= measurement_noise_scale;
     kf.measurementNoiseCov.rowRange(2, measureNum).colRange(2, measureNum) *= 0.01f;
@@ -53,28 +55,17 @@ void Track::init_kf(cv::Rect2f bbox, float dt, float process_noise_scale, float 
     kf.statePost.at<float>(3, 0) = bbox.width / bbox.height;
 }
 
-Track::Track(cv::Rect2f bbox, float dt, float process_noise_scale, float measurement_noise_scale)
-{
-    m_id = ++kf_count;
-    init_kf(bbox, dt, process_noise_scale, measurement_noise_scale);
-}
-
-Track::~Track()
-{
-    m_history.clear();
-}
-
-cv::Rect2f Track::predict()
-{
-    cv::Mat prediction = kf.predict();
+cv::Rect2f KFTrackerConstantVelocity::predict()
+{   
     m_age++;
     m_time_since_update++;
+    cv::Mat prediction = kf.predict();
     auto bbox = get_bbox(prediction.at<float>(0, 0), prediction.at<float>(1, 0), prediction.at<float>(2, 0), prediction.at<float>(3, 0));
     m_history.push_back(bbox);
     return bbox;
 }
 
-void Track::update(cv::Rect2f bbox)
+void KFTrackerConstantVelocity::update(cv::Rect2f bbox)
 {
     m_time_since_update = 0;
     m_history.clear();
@@ -89,13 +80,13 @@ void Track::update(cv::Rect2f bbox)
     kf.correct(measurement);
 }
 
-cv::Rect2f Track::get_state()
+cv::Rect2f KFTrackerConstantVelocity::get_state()
 {
     cv::Mat state = kf.statePost;
     return get_bbox(state.at<float>(0, 0), state.at<float>(1, 0), state.at<float>(2, 0), state.at<float>(3, 0));
 }
 
-cv::Rect2f Track::get_bbox(float cx, float cy, float s, float r)
+cv::Rect2f KFTrackerConstantVelocity::get_bbox(float cx, float cy, float s, float r)
 {
     float w = sqrt(s * r);
     float h = s / w;
@@ -105,26 +96,32 @@ cv::Rect2f Track::get_bbox(float cx, float cy, float s, float r)
     return cv::Rect2f(x, y, w, h);
 }
 
-void KFTrackerConstantAcceleration::init_kf(cv::Rect2f bbox, float dt, float process_noise_scale, float measurement_noise_scale) {
+void KFTrackerConstantAcceleration::init_kf(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale, size_t time_step) {
     
     size_t measureNum = 4; // [x,y,w,h]
     size_t stateNum = measureNum * 3; // [x,y,w,h,dx,dy,dw,dh,ddx,ddy,ddw,ddh]
-    auto dynamicsMatrix = (cv::Mat_<float>(3, 3) <<
+    kf = cv::KalmanFilter(stateNum, measureNum, 0);
+    measurement = cv::Mat::zeros(measureNum, 1, CV_32F);
+
+    float dt = static_cast<float>(time_step);
+    cv::Mat dynamicsMatrix = (cv::Mat_<float>(3, 3) <<
         1, dt, dt * dt * 0.5,
         0, 1, dt,
         0, 0, 1);
 
-    auto covMatrix = (cv::Mat_<float>(3, 3) <<
+    cv::Mat covMatrix = (cv::Mat_<float>(3, 3) <<
         powf(dt, 6) / 36.f, powf(dt, 5) / 24.f, powf(dt, 4) / 6.f,
         powf(dt, 5) / 24.f, powf(dt, 4) / 4.f, powf(dt, 3) / 2.f,
         powf(dt, 4) / 6.f, powf(dt, 3) / 2.f, powf(dt, 2));
+
+    covMatrix *= process_noise_scale;
 
     kf.transitionMatrix = cv::Mat::zeros(stateNum, stateNum, CV_32F);
     kf.processNoiseCov = cv::Mat::zeros(stateNum, stateNum, CV_32F);
 
     for (size_t i = 0; i < stateNum; i += 3) {
-        kf.transitionMatrix.rowRange(i, i + 3).colRange(i, i + 3) = dynamicsMatrix;
-        kf.processNoiseCov.rowRange(i, i + 3).colRange(i, i + 3) = covMatrix * process_noise_scale;
+        dynamicsMatrix.copyTo(kf.transitionMatrix.rowRange(i, i + 3).colRange(i, i + 3));
+        covMatrix.copyTo(kf.processNoiseCov.rowRange(i, i + 3).colRange(i, i + 3)) ;
     }
 
     kf.measurementMatrix = cv::Mat::zeros(measureNum, stateNum, CV_32F);
@@ -133,10 +130,8 @@ void KFTrackerConstantAcceleration::init_kf(cv::Rect2f bbox, float dt, float pro
     }
 
     kf.measurementNoiseCov = cv::Mat::eye(measureNum, measureNum, CV_32F);
-    for (size_t i = 0; i < measureNum; ++i) {
-        kf.measurementNoiseCov.at<float>(i, i) = measurement_noise_scale;
-    }
-
+    kf.measurementNoiseCov *= measurement_noise_scale;
+    
     kf.errorCovPre = cv::Mat_<float>::ones(stateNum, stateNum);
 
     // initialize state vector with bounding box in // [x, y, w, h] style
@@ -145,4 +140,35 @@ void KFTrackerConstantAcceleration::init_kf(cv::Rect2f bbox, float dt, float pro
     kf.statePost.at<float>(3, 0) = bbox.y;
     kf.statePost.at<float>(6, 0) = bbox.width;
     kf.statePost.at<float>(9, 0) = bbox.height;
+}
+
+cv::Rect2f KFTrackerConstantAcceleration::predict()
+{   
+    m_age++;
+    m_time_since_update++;
+    cv::Mat prediction = kf.predict();
+    auto bbox = cv::Rect2f(prediction.at<float>(0, 0), prediction.at<float>(3, 0), prediction.at<float>(6, 0), prediction.at<float>(9, 0));
+    m_history.push_back(bbox);
+    return bbox;
+}
+
+void KFTrackerConstantAcceleration::update(cv::Rect2f bbox)
+{
+    m_time_since_update = 0;
+    m_history.clear();
+
+    // update measurement
+    measurement.at<float>(0, 0) = bbox.x;
+    measurement.at<float>(1, 0) = bbox.y;
+    measurement.at<float>(2, 0) = bbox.width;
+    measurement.at<float>(3, 0) = bbox.height;
+
+    // update
+    kf.correct(measurement);
+}
+
+cv::Rect2f KFTrackerConstantAcceleration::get_state()
+{
+    cv::Mat state = kf.statePost;
+    return cv::Rect2f(state.at<float>(0, 0), state.at<float>(3, 0), state.at<float>(6, 0), state.at<float>(9, 0));
 }
