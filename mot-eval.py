@@ -9,24 +9,20 @@ import numpy as np
 
 def parse_argumesnts():
     parser = ArgumentParser()
+
     parser.add_argument(
-        "--gt",
-        dest="gt",
+        "--path",
+        dest="path",
         required=True,
-        help="Path to ground truth file",
-    )
-    parser.add_argument(
-        "--out",
-        dest="out",
-        required=False,
-        default=None,
-        help="Path to tracking output file",
+        help="Path to MOT sequence folder",
     )
 
-    if args.out is None:
-        args.out = str(Path(args.gt).parent.parent / "out.txt")
+    args = parser.parse_args()
 
-    return parser.parse_args()
+    args.out = str(Path(args.path) / "out.txt")
+    args.gt = str(Path(args.path) / "gt" / "gt.txt")
+
+    return args
 
 
 def motMetricsEnhancedCalculator(gtSource, outSource):

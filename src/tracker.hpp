@@ -18,6 +18,8 @@ public:
     size_t m_id = 0;
 
     KFTracker(cv::Rect2f bbox, float process_noise_scale, float measurement_noise_scale, size_t time_step) {
+        (void)bbox;
+        
         if (process_noise_scale < 0) {
             throw std::invalid_argument("process_noise_scale must be greater than or equal to 0");
         }

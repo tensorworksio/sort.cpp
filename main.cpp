@@ -14,9 +14,9 @@ namespace po = boost::program_options;
 int main(int argc, char** argv) {
     po::options_description desc("Allowed options");
     desc.add_options()
-        ("help", "produce help message")
-        ("path", po::value<std::string>(), "path to MOT sequence")
-        ("display", po::bool_switch(), "display frames");
+        ("help", "MOT tracker using SORT algorithm")
+        ("path", po::value<std::string>(), "path to MOT sequence folder")
+        ("display", po::bool_switch()->default_value(false), "display frames");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -28,25 +28,27 @@ int main(int argc, char** argv) {
     }
 
     std::string path;
-    bool display;
+    std::string detPath;
+    std::string gtPath;
+    std::string outPath;
+    std::filesystem::path imgPath ;
+    std::vector<std::filesystem::path> imageFiles;
 
     if (vm.count("path")) {
         path = vm["path"].as<std::string>();
+        detPath = path + "/det/det.txt";
+        gtPath = path + "/gt/gt.txt";
+        outPath = path + "/out.txt";
+        imgPath = path + "/img1";
     } else {
         std::cerr << "Path to MOT sequence was not set.\n";
         return 1;
     }
 
+    bool display;
     if (vm["display"].as<bool>()) {
         display = true;
     }
-
-    std::string detPath = path + "/det/det.txt";
-    std::string gtPath = path + "/gt/gt.txt";
-    std::string outPath = path + "/out.txt";
-
-    std::filesystem::path imgPath = path + "/img1";
-    std::vector<std::filesystem::path> imageFiles;
 
     std::ifstream infile(detPath);
     std::ofstream outfile(outPath);
@@ -110,7 +112,7 @@ int main(int argc, char** argv) {
 
         if (display) {
             cv::imshow("Frame", frame.image);
-            if (cv::waitKey(10) == 27) {
+            if (cv::waitKey(30) == 27) {
                 break;
             }
         }
