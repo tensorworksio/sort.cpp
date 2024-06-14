@@ -1,10 +1,15 @@
 project('sort.cpp', 'cpp')
 
 dlib_dep = dependency('dlib-1', method : 'pkg-config')
-boost_depp = dependency('boost', modules : ['filesystem', 'program_options'])
-opencv_dep = dependency('opencv', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video'])
+boost_dep = dependency('boost', modules : ['filesystem', 'program_options'])
 
-cxx_flags = ['-I/usr/local/include/opencv4', '-Isrc', '-Wall', '-Wextra', '-g']
+if host_machine.system() == 'darwin'
+    opencv_dep = dependency('opencv4', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video'])
+else
+    opencv_dep = dependency('opencv', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video'])
+endif
+
+cxx_flags = ['-Isrc', '-Wall', '-Wextra', '-g', '-std=c++17']
 
 inc_dir = include_directories('src')
 src_dir = meson.current_source_dir() / 'src'
@@ -14,7 +19,7 @@ main_file = meson.current_source_dir() / 'main.cpp'
 src_files += main_file
 
 executable('main', src_files,
-  dependencies : [dlib_dep, boost_depp, opencv_dep],
+  dependencies : [dlib_dep, boost_dep, opencv_dep],
   include_directories : inc_dir,
   cpp_args : cxx_flags,
   install : true
