@@ -6,8 +6,8 @@
 
 
 enum class KFTrackerType {
-    CONSTANT_VELOCITY,
-    CONSTANT_ACCELERATION
+    CONSTANT_VELOCITY = 0,
+    CONSTANT_ACCELERATION = 1
 };
 
 class KFTracker {

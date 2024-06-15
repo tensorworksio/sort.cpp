@@ -2,8 +2,16 @@
 #include "metrics.hpp"
 #include <dlib/optimization/max_cost_assignment.h>
 
+SORT::SORT(const SORTConfig& config) : 
+  SORT(config.tracker, 
+              config.max_age, 
+              config.iou_threshold, 
+              config.process_noise_scale, 
+              config.measurement_noise_scale, 
+              config.time_step) {}
 
-SortTracker::SortTracker(KFTrackerType type,
+
+SORT::SORT(KFTrackerType type,
                          size_t max_age, 
                          float iou_threshold, 
                          float process_noise_scale, 
@@ -17,7 +25,7 @@ SortTracker::SortTracker(KFTrackerType type,
       time_step(time_step) {}
 
 
-void SortTracker::assign(std::vector<Detection>& detections, 
+void SORT::assign(std::vector<Detection>& detections, 
                          std::set<std::pair<size_t, size_t>>& matches, 
                          std::set<size_t>& unmatched_detections, 
                          std::set<size_t>& unmatched_tracks)
@@ -59,7 +67,7 @@ void SortTracker::assign(std::vector<Detection>& detections,
     }
 }
 
-void SortTracker::process(Frame& frame) {
+void SORT::process(Frame& frame) {
     std::vector<Detection>& detections = frame.detected_objects;
 
     std::set<std::pair<size_t, size_t>> matches;

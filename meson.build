@@ -1,13 +1,9 @@
 project('sort.cpp', 'cpp')
 
 dlib_dep = dependency('dlib-1', method : 'pkg-config')
-boost_dep = dependency('boost', modules : ['filesystem', 'program_options'])
-
-if host_machine.system() == 'darwin'
-    opencv_dep = dependency('opencv4', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video'])
-else
-    opencv_dep = dependency('opencv', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video'])
-endif
+json_dep = dependency('nlohmann_json', method : 'pkg-config')
+boost_dep = dependency('boost', modules : ['filesystem', 'program_options', 'json'])
+opencv_dep = dependency('opencv4', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video'])
 
 cxx_flags = ['-Isrc', '-Wall', '-Wextra', '-g', '-std=c++17']
 
@@ -19,7 +15,7 @@ main_file = meson.current_source_dir() / 'main.cpp'
 src_files += main_file
 
 executable('main', src_files,
-  dependencies : [dlib_dep, boost_dep, opencv_dep],
+  dependencies : [dlib_dep, boost_dep, opencv_dep, json_dep],
   include_directories : inc_dir,
   cpp_args : cxx_flags,
   install : true
