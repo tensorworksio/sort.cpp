@@ -1,8 +1,8 @@
 # SORT
 
-<img src="https://github.com/tensorworksio/sort.cpp/blob/master/docs/output.gif" width="320" height="180"/>
+<img src="https://github.com/tensorworksio/sort.cpp/blob/master/docs/output.gif" width="640" height="360"/>
 
-Yet another C++ adaptation of SORT tracking algorithm, inspired by [motracker](https://github.com/adipandas/multi-object-tracker/tree/master) 
+Yet another C++ adaptation of SORT multi object tracking algorithm, inspired by [motracker](https://github.com/adipandas/multi-object-tracker/tree/master) 
 
 ## Dataset
 
