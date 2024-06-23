@@ -45,13 +45,14 @@ int main(int argc, char** argv) {
         ("save", po::bool_switch()->default_value(false), "Save video");
 
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);    
+    po::store(po::parse_command_line(argc, argv, desc), vm); 
 
     if (vm.count("help")) {
         std::cout << desc << std::endl;
         return 1;
     }
+
+    po::notify(vm);
     
     // SORT config
     SORTConfig config;
