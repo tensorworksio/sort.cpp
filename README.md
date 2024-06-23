@@ -1,6 +1,8 @@
 # SORT
 
-Yet another C++ adaptation of SORT tracking algorithm
+<img src="https://github.com/tensorworksio/sort.cpp/blob/master/docs/output.gif" width="320" height="180"/>
+
+Yet another C++ adaptation of SORT tracking algorithm, inspired by [motracker](https://github.com/adipandas/multi-object-tracker/tree/master) 
 
 ## Dataset
 
@@ -16,7 +18,6 @@ unzip MOT15.zip -d data && rm MOT15.zip
 - boost
 - dlib
 - opencv
-- nlohmann/json
 
 ## Compile
 
@@ -33,12 +34,14 @@ Launch the MOT Challenge
 
 ```bash
 cd build
-./main --path ../data/MOT15/train/ADL-Rundle-8 --config ../config.json --display
+./main --help
 ```
-Or if you want to enable perfect object detector
+
+### Example
 
 ```bash
-./main --path ../data/MOT15/train/ADL-Rundle-8 --config ../config.json --gt --display
+cd build
+./main --path ../data/MOT15/train/ADL-Rundle-8 --config ../config.json --display --gt --save
 ```
 
 ## Test

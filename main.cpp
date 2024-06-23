@@ -12,14 +12,37 @@
 namespace fs = boost::filesystem;
 namespace po = boost::program_options;
 
+void getSequenceInfo(const fs::path& iniFilePath, po::variables_map& vm) {
+    po::options_description config("Sequence info");
+    config.add_options()
+        ("Sequence.name", po::value<std::string>(), "Sequence name")
+        ("Sequence.imDir", po::value<std::string>(), "Image directory")
+        ("Sequence.frameRate", po::value<double>(), "Frame rate")
+        ("Sequence.seqLength", po::value<int>(), "Sequence length")
+        ("Sequence.imWidth", po::value<int>(), "Image width")
+        ("Sequence.imHeight", po::value<int>(), "Image height")
+        ("Sequence.imExt", po::value<std::string>(), "Image extension");
+
+    std::ifstream iniFile(iniFilePath.string());
+    if (!iniFile) {
+        std::cerr << "INI file not found: " << iniFilePath.string() << std::endl;
+        return;
+    }
+    
+    po::store(po::parse_config_file(iniFile, config), vm);
+    po::notify(vm);
+}
+
 int main(int argc, char** argv) {
-    po::options_description desc("Allowed options");
+    
+    po::options_description desc(" options");
     desc.add_options()
         ("help,h", "SORT multiple object tracker")
         ("path,p", po::value<std::string>()->required(), "Path to MOT sequence folder")
         ("config,c", po::value<std::string>(), "Path to SORT config.json")
         ("gt", po::bool_switch()->default_value(false), "Ground truth mode")
-        ("display", po::bool_switch()->default_value(false), "Display frames");
+        ("display", po::bool_switch()->default_value(false), "Display frames")
+        ("save", po::bool_switch()->default_value(false), "Save video");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -39,16 +62,23 @@ int main(int argc, char** argv) {
 
     std::cout << "SORT config:" << std::endl;
     std::cout << config << std::endl;
-
+  
     // Display
     bool display = vm["display"].as<bool>();
 
     // Ground truth
     bool gt = vm["gt"].as<bool>();
-    
+
+    // Video saver    
+    bool saveVideo = vm["save"].as<bool>();
+
     // MOT path
     fs::path path(vm["path"].as<std::string>());
     fs::path outPath = path / "out.txt";
+
+    // Extract sequence info
+    fs::path seqInfoPath = path / "seqinfo.ini";
+    getSequenceInfo(seqInfoPath, vm);
 
     fs::path detPath = path / "det" / "det.txt";
     if (!fs::exists(detPath)) {
@@ -61,12 +91,27 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    fs::path imgPath = path / "img1";
+    fs::path imgPath = path / vm["Sequence.imDir"].as<std::string>();
     if (display && !fs::is_directory(imgPath)) {
         std::cerr << "Image directory does not exist: " << imgPath.string() << std::endl;
         return 1;
     }
     
+    // Video writer
+    cv::VideoWriter videoWriter;
+    fs::path videoPath = path / "output.mp4";
+    cv::Size imageSize(vm["Sequence.imWidth"].as<int>(), vm["Sequence.imHeight"].as<int>());
+    double fps = vm["Sequence.frameRate"].as<double>();
+
+    if (saveVideo) {
+        videoWriter.open(videoPath.string(), cv::VideoWriter::fourcc('m', 'p', '4', 'v'), fps, imageSize, true);
+    }
+
+    if (saveVideo && !videoWriter.isOpened()) {
+        std::cerr << "Could not open the output video file for write" << std::endl;
+        return 1;
+    }
+
     std::ifstream infile(gt ? gtPath.string() : detPath.string());
     std::ofstream outfile(outPath.string());
 
@@ -127,16 +172,26 @@ int main(int argc, char** argv) {
             cv::rectangle(frame.image, detection.bbox, color, 2);
             cv::putText(frame.image, std::to_string(detection.id), cv::Point(detection.bbox.x, detection.bbox.y), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
         }
-
+        
+        // Write video
+        if (saveVideo) {
+            videoWriter.write(frame.image);
+        }
+        // Display
         if (display) {
             cv::imshow("Frame", frame.image);
-            if (cv::waitKey(30) == 27) {
-                break;
-            }
+        }
+        if (cv::waitKey(1000 / fps) == 27) {
+            break;
         }
     }
+    
+  if (videoWriter.isOpened()) {
+      videoWriter.release();
+  }
 
-    cv::destroyAllWindows();
-    outfile.close();
-    return 0;
+  cv::destroyAllWindows();
+  outfile.close();
+
+  return 0;
 }
