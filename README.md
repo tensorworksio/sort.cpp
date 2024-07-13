@@ -3,7 +3,7 @@
     <img src="https://github.com/tensorworksio/sort.cpp/blob/master/docs/output.gif" width="640" height="360"/>
 </p>
 
-Yet another C++ adaptation of SORT multi object tracking algorithm, inspired by [motracker](https://github.com/adipandas/multi-object-tracker/tree/master) 
+Yet another C++ adaptation of SORT multi object tracking algorithm, inspired by [motracker](https://github.com/adipandas/multi-object-tracker/tree/master)
 
 ## Dataset
 
@@ -47,8 +47,8 @@ cd build
 
 ## Test
 ```bash
-python3 -m pip install pipenv
-python3 -m pipenv install
+python3 -m pipx install pipenv
+pipenv install
 # Run evaluation
-python3 -m pipenv run python mot-eval.py --path=data/MOT15/train/ADL-Rundle-8
+pipenv run python mot-eval.py --path=data/MOT15/train/ADL-Rundle-8
 ```

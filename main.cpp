@@ -1,5 +1,4 @@
 #include <iostream>
-#include <iomanip> 
 #include <fstream>
 #include <string>
 
@@ -28,13 +27,13 @@ void getSequenceInfo(const fs::path& iniFilePath, po::variables_map& vm) {
         std::cerr << "INI file not found: " << iniFilePath.string() << std::endl;
         return;
     }
-    
+
     po::store(po::parse_config_file(iniFile, config), vm);
     po::notify(vm);
 }
 
 int main(int argc, char** argv) {
-    
+
     po::options_description desc(" options");
     desc.add_options()
         ("help,h", "SORT multiple object tracker")
@@ -45,7 +44,7 @@ int main(int argc, char** argv) {
         ("save", po::bool_switch()->default_value(false), "Save video");
 
     po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, desc), vm); 
+    po::store(po::parse_command_line(argc, argv, desc), vm);
 
     if (vm.count("help")) {
         std::cout << desc << std::endl;
@@ -53,7 +52,7 @@ int main(int argc, char** argv) {
     }
 
     po::notify(vm);
-    
+
     // SORT config
     SORTConfig config;
     if (vm.count("config")) {
@@ -63,14 +62,14 @@ int main(int argc, char** argv) {
 
     std::cout << "SORT config:" << std::endl;
     std::cout << config << std::endl;
-  
+
     // Display
     bool display = vm["display"].as<bool>();
 
     // Ground truth
     bool gt = vm["gt"].as<bool>();
 
-    // Video saver    
+    // Video saver
     bool saveVideo = vm["save"].as<bool>();
 
     // MOT path
@@ -97,7 +96,7 @@ int main(int argc, char** argv) {
         std::cerr << "Image directory does not exist: " << imgPath.string() << std::endl;
         return 1;
     }
-    
+
     // Video writer
     cv::VideoWriter videoWriter;
     fs::path videoPath = path / "output.mp4";
@@ -120,11 +119,11 @@ int main(int argc, char** argv) {
     std::ostringstream oss;
     std::string line;
     std::string next_line;
-    
+
     SORT tracker = SORT(config);
     Detection detection;
     Frame frame;
-    
+
     std::vector<fs::path> imageFiles;
     for (const auto& entry : fs::directory_iterator(imgPath)) {
         imageFiles.push_back(entry.path());
@@ -136,7 +135,7 @@ int main(int argc, char** argv) {
         frame.idx++;
         frame.image = cv::imread(path.string());
         frame.detected_objects.clear();
-        
+
         // Read detections from file
         while (true) {
             if (!next_line.empty()) {
@@ -173,7 +172,7 @@ int main(int argc, char** argv) {
             cv::rectangle(frame.image, detection.bbox, color, 2);
             cv::putText(frame.image, std::to_string(detection.id), cv::Point(detection.bbox.x, detection.bbox.y), cv::FONT_HERSHEY_SIMPLEX, 1, color, 2);
         }
-        
+
         // Write video
         if (saveVideo) {
             videoWriter.write(frame.image);
@@ -186,7 +185,7 @@ int main(int argc, char** argv) {
             break;
         }
     }
-    
+
   if (videoWriter.isOpened()) {
       videoWriter.release();
   }
