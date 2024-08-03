@@ -14,18 +14,11 @@ wget https://motchallenge.net/data/MOT15.zip
 unzip MOT15.zip -d data && rm MOT15.zip
 ```
 
-## Dependencies
-
-- boost
-- dlib
-- opencv
-
 ## Compile
 
 ```bash
 meson setup build
-cd build
-ninja
+meson compile -C build
 ```
 ## Configure
 Set your SORT configuration in `config.json`
@@ -47,8 +40,6 @@ cd build
 
 ## Test
 ```bash
-python3 -m pipx install pipenv
-pipenv install
-# Run evaluation
-pipenv run python mot-eval.py --path=data/MOT15/train/ADL-Rundle-8
+. venv/bin/activate
+python3 tests/mot-eval.py --path data/MOT15/train/ADL-Rundle-8
 ```
