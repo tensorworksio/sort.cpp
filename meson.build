@@ -1,21 +1,29 @@
 project('sort.cpp', 'cpp')
 
+# Include directory
+inc_dir = include_directories('include')
+
+# Dependencies
 dlib_dep = dependency('dlib-1', method : 'pkg-config')
 boost_dep = dependency('boost', modules : ['filesystem', 'program_options', 'json'])
 opencv_dep = dependency('opencv4', modules : ['core', 'highgui', 'imgproc', 'imgcodecs', 'video', 'videoio'])
 
-cxx_flags = ['-Isrc', '-Wall', '-Wextra', '-g', '-std=c++17']
+# Source files
+src_files = files(
+  'src/tracker.cpp',
+  'src/sort.cpp',
+  'src/main.cpp'
+)
 
-inc_dir = include_directories('src')
-src_dir = meson.current_source_dir() / 'src'
-src_files = run_command('find', src_dir, '-name', '*.cpp', check : true).stdout().strip().split()
+# Build shared library
+library('sort', src_files,
+  dependencies : [dlib_dep, boost_dep, opencv_dep],
+  include_directories : inc_dir
+)
 
-main_file = meson.current_source_dir() / 'main.cpp'
-src_files += main_file
-
+# Executable
 executable('main', src_files,
   dependencies : [dlib_dep, boost_dep, opencv_dep],
   include_directories : inc_dir,
-  cpp_args : cxx_flags,
   install : true
 )
