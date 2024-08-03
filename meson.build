@@ -3,13 +3,6 @@ project('sort.cpp', 'cpp')
 # Include directory
 inc_dir = include_directories('include')
 
-# Check and install python dependencies
-python = find_program('python3')
-run_command(python, '-m', 'venv', 'venv', check: false)
-venv_python = 'venv/bin/python3'
-run_command(venv_python, '-m', 'pip', 'install', '--upgrade', 'pip', check: false)
-run_command(venv_python, '-m', 'pip', 'install', '-r', 'requirements.txt', check: false)
-
 # Dependencies
 dlib_dep = dependency('dlib-1', method : 'pkg-config')
 boost_dep = dependency('boost', modules : ['filesystem', 'program_options', 'json'])

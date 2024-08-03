@@ -40,6 +40,9 @@ cd build
 
 ## Test
 ```bash
+python3 -m venv venv
 . venv/bin/activate
+pip3 install -r requirements
+
 python3 tests/mot-eval.py --path data/MOT15/train/ADL-Rundle-8
 ```

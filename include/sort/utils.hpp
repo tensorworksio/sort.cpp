@@ -3,20 +3,22 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 
-
-struct Detection {
+struct Detection
+{
     int frame;
     int id;
     cv::Rect2f bbox;
     float confidence;
     cv::Point3f position;
 
-    cv::Scalar getColor() const {
+    cv::Scalar getColor() const
+    {
         srand(id);
         return cv::Scalar(rand() % 256, rand() % 256, rand() % 256);
     }
 
-    friend std::istream& operator>>(std::istream& is, Detection& detection) {
+    friend std::istream &operator>>(std::istream &is, Detection &detection)
+    {
         std::string field;
 
         std::getline(is, field, ',');
@@ -52,17 +54,19 @@ struct Detection {
         return is;
     }
 
-    friend std::ostream& operator<<(std::ostream& os, const Detection& detection) {
-        os << detection.frame << "," << detection.id << "," 
-        << detection.bbox.x << "," << detection.bbox.y << "," 
-        << detection.bbox.width << "," << detection.bbox.height << "," 
-        << detection.confidence << "," 
-        << detection.position.x << "," << detection.position.y << "," << detection.position.z;
+    friend std::ostream &operator<<(std::ostream &os, const Detection &detection)
+    {
+        os << detection.frame << "," << detection.id << ","
+           << detection.bbox.x << "," << detection.bbox.y << ","
+           << detection.bbox.width << "," << detection.bbox.height << ","
+           << detection.confidence << ","
+           << detection.position.x << "," << detection.position.y << "," << detection.position.z;
         return os;
     }
 };
 
-struct Frame {
+struct Frame
+{
     int idx = 0;
     cv::Mat image;
     std::vector<Detection> detected_objects;
