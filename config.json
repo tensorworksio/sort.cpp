@@ -1,45 +1,33 @@
-{   
+{
     "description": "SORT config",
-
-    "tracker": 
-        {
-            "description": "Type of propagation model for the tracker",
-            "choices": "0: CONSTANT_VELOCITY; 1: CONSTANT_ACCELERATION",
-            "value": 1
-        },
-    
-    "max_age":
-        {
-            "description": "Number of lost streak before a track gets deleted",
-            "type": "int",
-            "value": 3
-        },
-    
-    "iou_threshold":
-        {
-            "description": "Minimum IoU for detection+track association",
-            "type": "float",
-            "value": 0.3
-        },
-
-    "process_noise_scale": 
-        {
-            "description": "The higher the value the less you trust the tracker propagation model",
-            "type": "float",
-            "value": 1.0
-        },
-
-    "measurement_noise_scale":
-        {
-            "description": "The higher the value the less you trust the detector model",
-            "type": "float",
-            "value": 1.0
-        },
-
-    "time_step": 
-        {
-            "description": "Time step to apply in the tracker propagation model",
-            "type": "int",
-            "value": 1
-        }
+    "tracker": {
+        "description": "Type of propagation model for the tracker",
+        "choices": "0: CONSTANT_VELOCITY; 1: CONSTANT_ACCELERATION",
+        "value": 1
+    },
+    "max_age": {
+        "description": "Number of lost streak before a track gets deleted",
+        "type": "int",
+        "value": 3
+    },
+    "iou_threshold": {
+        "description": "Minimum IoU for detection+track association",
+        "type": "float",
+        "value": 0.3
+    },
+    "process_noise_scale": {
+        "description": "The higher the value the less you trust the tracker propagation model",
+        "type": "float",
+        "value": 1.0
+    },
+    "measurement_noise_scale": {
+        "description": "The higher the value the less you trust the detector model",
+        "type": "float",
+        "value": 1.0
+    },
+    "time_step": {
+        "description": "Time step to apply in the tracker propagation model",
+        "type": "int",
+        "value": 1
+    }
 }

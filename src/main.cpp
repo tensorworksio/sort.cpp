@@ -14,7 +14,13 @@ namespace po = boost::program_options;
 void getSequenceInfo(const fs::path &iniFilePath, po::variables_map &vm)
 {
     po::options_description config("Sequence info");
-    config.add_options()("Sequence.name", po::value<std::string>(), "Sequence name")("Sequence.imDir", po::value<std::string>(), "Image directory")("Sequence.frameRate", po::value<double>(), "Frame rate")("Sequence.seqLength", po::value<int>(), "Sequence length")("Sequence.imWidth", po::value<int>(), "Image width")("Sequence.imHeight", po::value<int>(), "Image height")("Sequence.imExt", po::value<std::string>(), "Image extension");
+    config.add_options()("Sequence.name", po::value<std::string>(), "Sequence name")
+                        ("Sequence.imDir", po::value<std::string>(), "Image directory")
+                        ("Sequence.frameRate", po::value<double>(), "Frame rate")
+                        ("Sequence.seqLength", po::value<int>(), "Sequence length")
+                        ("Sequence.imWidth", po::value<int>(), "Image width")
+                        ("Sequence.imHeight", po::value<int>(), "Image height")
+                        ("Sequence.imExt", po::value<std::string>(), "Image extension");
 
     std::ifstream iniFile(iniFilePath.string());
     if (!iniFile)
@@ -31,7 +37,12 @@ int main(int argc, char **argv)
 {
 
     po::options_description desc(" options");
-    desc.add_options()("help,h", "SORT multiple object tracker")("path,p", po::value<std::string>()->required(), "Path to MOT sequence folder")("config,c", po::value<std::string>(), "Path to SORT config.json")("gt", po::bool_switch()->default_value(false), "Ground truth mode")("display", po::bool_switch()->default_value(false), "Display frames")("save", po::bool_switch()->default_value(false), "Save video");
+    desc.add_options()("help,h", "SORT multiple object tracker")
+                      ("path,p", po::value<std::string>()->required(), "Path to MOT sequence folder")
+                      ("config,c", po::value<std::string>(), "Path to SORT config.json")
+                      ("gt", po::bool_switch()->default_value(false), "Ground truth mode")
+                      ("display", po::bool_switch()->default_value(false), "Display frames")
+                      ("save", po::bool_switch()->default_value(false), "Save video");
 
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc), vm);
