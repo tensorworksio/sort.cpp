@@ -33,6 +33,10 @@ struct SORTConfig
         {
             config.tracker = static_cast<KFTrackerType>(root.get<int>("tracker.value"));
         }
+        if (root.count("max_age"))
+        {
+            config.max_age = root.get<size_t>("max_age.value");
+        }
         if (root.count("iou_threshold"))
         {
             config.iou_threshold = root.get<float>("iou_threshold.value");
