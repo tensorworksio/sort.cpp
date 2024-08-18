@@ -3,7 +3,6 @@
 #include <string>
 
 #include "sort/sort.hpp"
-#include "sort/utils.hpp"
 #include <opencv2/opencv.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>

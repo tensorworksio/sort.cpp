@@ -28,14 +28,14 @@ Launch the MOT Challenge
 
 ```bash
 cd build
-./main --help
+./sort --help
 ```
 
 ### Example
 
 ```bash
 cd build
-./main --path ../data/MOT15/train/ADL-Rundle-8 --config ../config.json --display --gt --save
+./sort --path ../data/MOT15/train/ADL-Rundle-8 --config ../config.json --display --gt --save
 ```
 
 ## Test

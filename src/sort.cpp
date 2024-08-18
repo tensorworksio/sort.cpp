@@ -1,5 +1,5 @@
 #include "sort/sort.hpp"
-#include "sort/metrics.hpp"
+#include "common/metrics.hpp"
 #include <dlib/optimization/max_cost_assignment.h>
 
 SORT::SORT(const SORTConfig &config) : SORT(config.tracker,

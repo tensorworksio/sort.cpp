@@ -22,7 +22,7 @@ library('sort', src_files,
 )
 
 # Main executable
-executable('main', src_files,
+executable('sort', src_files,
   dependencies : [dlib_dep, boost_dep, opencv_dep],
   include_directories : inc_dir,
   install : true
